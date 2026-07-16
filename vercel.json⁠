@@ -1,4 +1,6 @@
-// vercel.json
+// ============================================
+// vercel.json (আপডেটেড)
+// ============================================
 {
   "version": 2,
   "builds": [
@@ -6,7 +8,7 @@
       "src": "main.py",
       "use": "@vercel/python",
       "config": {
-        "maxDuration": 30,
+        "maxDuration": 60,
         "runtime": "python3.11"
       }
     }
@@ -18,12 +20,13 @@
     }
   ],
   "env": {
-    "PYTHONPATH": "."
+    "PYTHONPATH": ".",
+    "DEBUG": "false"
   },
   "functions": {
     "main.py": {
       "memory": 1024,
-      "maxDuration": 30
+      "maxDuration": 60
     }
   }
 }
