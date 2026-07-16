@@ -4,7 +4,7 @@ import yt_dlp
 
 app = FastAPI()
 
-# আপনার মেইন ওয়েবসাইট (Netlify) যেন এই এপিআই ব্যবহার করতে পারে, তাই CORS ইনেবল করা হয়েছে
+# আপনার মেইন ওয়েবসাইট (Netlify) যেন এই এপিআই ব্যবহার করতে পারে, তাই CORS ইনেবল করা হয়েছে
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,12 +13,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/api/download")
-def download_video(url: str):
+# ১. ভিডিওর ইনফো (থাম্বনেইল ও টাইটেল) আনার জন্য রুট (যা আপনার ফ্রন্টএন্ডে দরকার)
+@app.get("/api/info")
+def get_video_info(url: str):
     if not url:
         raise HTTPException(status_code=400, detail="URL is required")
         
-    # yt-dlp এর সেটিংস (ভিডিওর বেস্ট কোয়ালিটি লিংক স্ক্র্যাপ করবে)
     ydl_opts = {
         'format': 'best',
         'quiet': True,
@@ -27,14 +27,47 @@ def download_video(url: str):
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # ভিডিওর ডেটা এক্সট্র্যাক্ট করা হচ্ছে
             info = ydl.extract_info(url, download=False)
+            return {
+                "success": True,
+                "title": info.get('title'),
+                "thumbnail": info.get('thumbnail')
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ২. মূল ভিডিও/অডিও ডাউনলোড লিংক জেনারেট করার জন্য রুট
+@app.get("/api/download")
+def download_video(url: str, type: str = "video", quality: str = "high"):
+    if not url:
+        raise HTTPException(status_code=400, detail="URL is required")
+        
+    # ইউজার অডিও চেয়েছে নাকি ভিডিও, তার ওপর ভিত্তি করে ফরম্যাট সিলেক্ট হবে
+    if type == "audio":
+        format_opt = 'bestaudio/best'
+    else:
+        format_opt = 'bestvideo+bestaudio/best' if quality == 'high' else 'worst/worst'
+        
+    ydl_opts = {
+        'format': format_opt,
+        'quiet': True,
+        'no_warnings': True,
+    }
+    
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            # সরাসরি ডাউনলোড ফাইলের রিলিজ ইউআরএল
+            download_url = info.get('url')
             
+            if not download_url:
+                raise HTTPException(status_code=404, detail="Download URL not found")
+                
             return {
                 "success": True,
                 "title": info.get('title'),
                 "thumbnail": info.get('thumbnail'),
-                "download_url": info.get('url')
+                "download_url": download_url
             }
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
