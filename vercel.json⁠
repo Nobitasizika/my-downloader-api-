@@ -1,31 +1,29 @@
+// vercel.json
 {
-  "success": true,
-  "message": "Video information retrieved successfully",
-  "data": {
-    "title": "Sample Video Title",
-    "thumbnail": "https://i.ytimg.com/vi/.../hqdefault.jpg",
-    "description": "Video description...",
-    "duration": 120,
-    "view_count": 1000,
-    "like_count": 50,
-    "uploader": "Channel Name",
-    "upload_date": "20240101",
-    "extractor": "youtube",
-    "webpage_url": "https://www.youtube.com/watch?v=...",
-    "direct_download_url": "https://...",
-    "formats": [
-      {
-        "format_id": "18",
-        "ext": "mp4",
-        "resolution": "640x360",
-        "filesize": 12345,
-        "vcodec": "avc1.42001E",
-        "acodec": "mp4a.40.2"
+  "version": 2,
+  "builds": [
+    {
+      "src": "main.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxDuration": 30,
+        "runtime": "python3.11"
       }
-    ],
-    "format": "mp4",
-    "resolution": "640x360",
-    "filesize": 12345,
-    "ext": "mp4"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "main.py"
+    }
+  ],
+  "env": {
+    "PYTHONPATH": "."
+  },
+  "functions": {
+    "main.py": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
   }
 }
