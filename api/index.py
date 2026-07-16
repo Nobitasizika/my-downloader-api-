@@ -1,7 +1,3 @@
-# ============================================
-# api/index.py - Pure API (No HTML/Website)
-# ============================================
-
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -10,31 +6,22 @@ from typing import Dict, Any
 import logging
 import time
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI
-app = FastAPI(
-    title="Video Downloader API",
-    description="API for downloading videos from social media platforms",
-    version="1.0.0",
-    docs_url="/docs",           # Swagger UI
-    redoc_url="/redoc",         # ReDoc
-    openapi_url="/openapi.json" # OpenAPI spec
-)
+app = FastAPI()
 
-# CORS - Allow all origins (for your main website)
+# CORS - সম্পূর্ণ ওপেন
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # আপনার মূল ওয়েবসাইটের URL দিতে পারেন
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 def extract_video_info(url: str) -> Dict[str, Any]:
-    """Extract video information using yt-dlp"""
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
@@ -55,13 +42,11 @@ def extract_video_info(url: str) -> Dict[str, Any]:
             if not info:
                 return {"success": False, "error": "No information found"}
             
-            # Handle playlist
             if 'entries' in info and info['entries']:
                 info = info['entries'][0]
                 if not info:
                     return {"success": False, "error": "Empty playlist"}
             
-            # Get direct URL
             direct_url = info.get('url')
             if not direct_url and info.get('formats'):
                 formats = [f for f in info['formats'] if f.get('url')]
@@ -78,8 +63,6 @@ def extract_video_info(url: str) -> Dict[str, Any]:
                     "direct_download_url": direct_url,
                     "platform": info.get('extractor', 'N/A'),
                     "webpage_url": info.get('webpage_url', url),
-                    "format": info.get('format', 'N/A'),
-                    "filesize": info.get('filesize', 'N/A'),
                 }
             }
             
@@ -89,34 +72,19 @@ def extract_video_info(url: str) -> Dict[str, Any]:
 
 @app.get("/")
 async def root():
-    """API Root - Returns API info"""
     return {
-        "name": "Video Downloader API",
-        "version": "1.0.0",
         "status": "active",
+        "message": "Video Downloader API is running",
+        "version": "1.0.0",
         "endpoints": {
-            "/": "API Information",
-            "/api/download": "Download video (GET with ?url=)",
-            "/api/health": "Health check",
-            "/docs": "Swagger Documentation",
-            "/redoc": "ReDoc Documentation"
-        },
-        "usage": {
-            "method": "GET or POST",
-            "params": {
-                "url": "Video URL (YouTube, Facebook, Instagram, TikTok, etc.)"
-            },
-            "example": "/api/download?url=https://www.youtube.com/watch?v=VIDEO_ID"
-        },
-        "supported_platforms": [
-            "YouTube", "Facebook", "Instagram", "TikTok", 
-            "Twitter/X", "Reddit", "Vimeo", "Dailymotion"
-        ]
+            "/": "This page",
+            "/api/download": "GET with ?url=VIDEO_URL",
+            "/api/health": "Health check"
+        }
     }
 
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint"""
     return {
         "status": "healthy",
         "timestamp": time.time(),
@@ -124,18 +92,8 @@ async def health_check():
     }
 
 @app.get("/api/download")
-async def download_video(url: str = Query(..., description="Video URL to download")):
-    """
-    Download video from any social media platform
-    
-    Parameters:
-    - url: Video URL (YouTube, Facebook, Instagram, TikTok, etc.)
-    
-    Returns:
-    - Video information including direct download URL
-    """
+async def download_video(url: str = Query(..., description="Video URL")):
     try:
-        # Validate URL
         if not url or not url.startswith(('http://', 'https://')):
             return JSONResponse(
                 status_code=400,
@@ -147,8 +105,6 @@ async def download_video(url: str = Query(..., description="Video URL to downloa
             )
         
         logger.info(f"Processing URL: {url}")
-        
-        # Extract video info
         result = extract_video_info(url)
         
         if result.get('success'):
@@ -163,8 +119,7 @@ async def download_video(url: str = Query(..., description="Video URL to downloa
                 content={
                     "success": False,
                     "error": result.get('error', 'Unknown error'),
-                    "message": "Failed to fetch video details",
-                    "suggestion": "Check if video is public and URL is correct"
+                    "message": "Failed to fetch video details"
                 }
             )
             
@@ -181,7 +136,6 @@ async def download_video(url: str = Query(..., description="Video URL to downloa
 
 @app.post("/api/download")
 async def download_video_post(data: Dict[str, Any]):
-    """POST version of download endpoint"""
     url = data.get('url')
     if not url:
         return JSONResponse(
@@ -194,5 +148,4 @@ async def download_video_post(data: Dict[str, Any]):
         )
     return await download_video(url=url)
 
-# Vercel handler
 app_handler = app
