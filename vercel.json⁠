@@ -1,11 +1,8 @@
-// ============================================
-// vercel.json (আপডেটেড)
-// ============================================
 {
   "version": 2,
   "builds": [
     {
-      "src": "main.py",
+      "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
         "maxDuration": 60,
@@ -16,15 +13,11 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "main.py"
+      "dest": "api/index.py"
     }
   ],
-  "env": {
-    "PYTHONPATH": ".",
-    "DEBUG": "false"
-  },
   "functions": {
-    "main.py": {
+    "api/index.py": {
       "memory": 1024,
       "maxDuration": 60
     }
